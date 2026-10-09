@@ -32,6 +32,7 @@ input,textarea{width:100%;font:inherit;color:var(--text);background:var(--bg);bo
 input:focus,textarea:focus{border-color:var(--accent)}
 .btn{display:block;width:100%;padding:16px;border-radius:16px;font-weight:700;font-size:18px;background:var(--accent);color:#fff}
 .btn.ghost{background:var(--accent-soft);color:var(--accent)}
+.btn.danger{background:none;color:var(--intenso);border:2px solid var(--intenso);margin-top:12px;font-size:16px;padding:13px}
 .err{color:var(--intenso);min-height:22px;margin:6px 0 10px;font-size:15px}
 
 /* HEADER / CALENDAR */
@@ -211,6 +212,7 @@ header h1{font-size:20px;margin:0}
       <button class="btn ghost" id="sh-cancel">Cancelar</button>
       <button class="btn" id="sh-save">Guardar</button>
     </div>
+    <button class="btn danger hidden" id="sh-del">🗑 Borrar este día</button>
   </div>
 </div>
 
@@ -404,6 +406,7 @@ function openSheet(k){
   setSingle("g-int",form.intensidad); setSingle("g-tipo",form.tipo); setSingle("g-loc",form.localizacion);
   setSingle("g-med", form.medicacion===null?null:(form.medicacion?"si":"no"));
   setMultiOpt("g-zona",e.zonas); setMulti("g-sint",e.sintomas); setMulti("g-des",e.desencadenantes);
+  $("sh-del").classList.toggle("hidden",!entries[k]);
   $("sheet-overlay").classList.remove("hidden");
   $("sheet").scrollTop=0;
 }
@@ -419,6 +422,11 @@ $("g-zona").addEventListener("click",e=>{ const b=e.target.closest(".opt"); if(b
 const picked=g=>[...document.querySelectorAll(`#${g} .chip.on`)].map(b=>b.dataset.v);
 
 $("sh-cancel").onclick=closeSheet;
+$("sh-del").onclick=async ()=>{
+  if(!confirm("¿Seguro que quieres borrar este día?")) return;
+  try{ await store.remove(cur); closeSheet(); toast("Día borrado"); }
+  catch(err){ toast("No se pudo borrar. Revisa internet."); }
+};
 $("sheet-overlay").addEventListener("click",e=>{ if(e.target.id==="sheet-overlay") closeSheet(); });
 $("sh-save").onclick=async ()=>{
   if(form.migraña===null){ toast("Elige: con o sin migraña"); return; }
