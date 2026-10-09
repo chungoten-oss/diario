@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6d5dfc">
+<title>Mi diario de migrañas</title>
+<style>
+:root{
+  --bg:#f5f4ff; --card:#ffffff; --text:#25223d; --muted:#7b7894; --line:#e6e4f5;
+  --accent:#6d5dfc; --accent-soft:#e9e6ff;
+  --leve:#ffd84d; --moderado:#ff9a3c; --intenso:#ee4b4b;
+  --ok:#2bb673;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#15142a; --card:#201f3b; --text:#f1f0ff; --muted:#a09dc4; --line:#33315a; --accent:#8b7dff; --accent-soft:#2c2a55; }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{min-height:100vh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.hidden{display:none!important}
+.wrap{max-width:520px;margin:0 auto;padding:16px}
+
+/* LOGIN */
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--card);border-radius:28px;padding:32px 24px;width:100%;max-width:380px;box-shadow:0 10px 40px rgba(109,93,252,.15);text-align:center}
+.login-card .big{font-size:64px;line-height:1}
+.login-card h1{margin:12px 0 4px;font-size:26px}
+.login-card p{color:var(--muted);margin:0 0 20px}
+input,textarea{width:100%;font:inherit;color:var(--text);background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;outline:none}
+input:focus,textarea:focus{border-color:var(--accent)}
+.btn{display:block;width:100%;padding:16px;border-radius:16px;font-weight:700;font-size:18px;background:var(--accent);color:#fff}
+.btn.ghost{background:var(--accent-soft);color:var(--accent)}
+.err{color:var(--intenso);min-height:22px;margin:6px 0 10px;font-size:15px}
+
+/* HEADER / CALENDAR */
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+header h1{font-size:20px;margin:0}
+.icon-btn{width:44px;height:44px;border-radius:14px;background:var(--card);font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.monthbar{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:20px;padding:8px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+.monthbar .title{font-size:22px;font-weight:800;text-transform:capitalize;text-align:center;flex:1}
+.nav{width:52px;height:52px;border-radius:16px;background:var(--accent-soft);color:var(--accent);font-size:26px;font-weight:800}
+.stats{display:flex;gap:8px;margin:14px 0}
+.stat{flex:1;background:var(--card);border-radius:16px;padding:10px 6px;text-align:center}
+.stat b{display:block;font-size:24px}
+.stat span{font-size:12px;color:var(--muted)}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.dow div{text-align:center;font-size:12px;font-weight:700;color:var(--muted);padding:6px 0}
+.day{aspect-ratio:1;border-radius:14px;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:17px;font-weight:700;position:relative;box-shadow:0 1px 4px rgba(0,0,0,.05);transition:transform .1s}
+.day:active{transform:scale(.92)}
+.day.empty{background:transparent;box-shadow:none;pointer-events:none}
+.day.future{opacity:.35;pointer-events:none}
+.day.today{outline:3px solid var(--accent)}
+.day.leve{background:var(--leve);color:#4a3b00}
+.day.moderado{background:var(--moderado);color:#4a2400}
+.day.intenso{background:var(--intenso);color:#fff}
+.day.ok{background:color-mix(in srgb,var(--ok) 22%,var(--card))}
+.day .mark{font-size:11px;line-height:1;margin-top:2px}
+.legend{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:16px 0;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:5px;vertical-align:-1px}
+.hint{text-align:center;color:var(--muted);font-size:14px;margin:4px 0 20px}
+
+/* SHEET */
+.overlay{position:fixed;inset:0;background:rgba(10,8,30,.55);display:flex;align-items:flex-end;justify-content:center;z-index:10}
+.sheet{background:var(--card);width:100%;max-width:560px;max-height:94vh;overflow:auto;border-radius:28px 28px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom));animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.sheet h2{margin:0 0 4px;font-size:22px;text-transform:capitalize}
+.sheet .sub{color:var(--muted);margin:0 0 14px}
+.q{font-weight:800;margin:20px 0 8px;font-size:16px}
+.row{display:flex;gap:8px}
+.opt{flex:1;padding:14px 6px;border-radius:16px;border:3px solid var(--line);background:var(--bg);font-weight:700;font-size:16px;text-align:center;line-height:1.2}
+.opt .e{display:block;font-size:30px;margin-bottom:4px}
+.opt.on{border-color:var(--accent);background:var(--accent-soft)}
+.opt.i-leve.on{background:var(--leve);border-color:#d9b400;color:#4a3b00}
+.opt.i-moderado.on{background:var(--moderado);border-color:#d97410;color:#4a2400}
+.opt.i-intenso.on{background:var(--intenso);border-color:#b52a2a;color:#fff}
+.opt.no.on{background:color-mix(in srgb,var(--ok) 25%,var(--card));border-color:var(--ok)}
+.row.wrap{flex-wrap:wrap}
+.row.wrap .opt{flex:1 1 30%}
+.opt svg{width:58px;height:58px;display:block;margin:0 auto 4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:11px 15px;border-radius:999px;border:2px solid var(--line);background:var(--bg);font-weight:600;font-size:15px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.actions{display:flex;gap:10px;margin-top:22px}
+.actions .btn{flex:1}
+.actions .btn.ghost{flex:0 0 36%}
+
+/* SUMMARY */
+.sum-card{background:var(--bg);border-radius:18px;padding:14px;margin:10px 0}
+.sum-card h3{margin:0 0 8px;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.bar{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:15px}
+.bar .lbl{width:110px;flex:none}
+.bar .track{flex:1;height:14px;background:var(--line);border-radius:8px;overflow:hidden}
+.bar .fill{height:100%;background:var(--accent);border-radius:8px}
+.bar .n{width:28px;text-align:right;font-weight:700}
+.list-day{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.list-day:last-child{border:0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#25223d;color:#fff;padding:12px 20px;border-radius:999px;font-weight:600;z-index:30}
+
+@media print{
+  body{background:#fff;color:#000}
+  #app>.wrap,#sheet-overlay,.noprint{display:none!important}
+  #sum-overlay{position:static;background:none;display:block}
+  .sheet{max-height:none;box-shadow:none;border-radius:0;animation:none;padding:0;background:#fff;color:#000}
+  .sum-card{background:#f3f3f3}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="hidden">
+  <form class="login-card" id="login-form">
+    <div class="big">🧠</div>
+    <h1>Mi diario de migrañas</h1>
+    <p>Entra para ver y anotar tus días</p>
+    <input id="email" type="email" placeholder="Correo electrónico" autocomplete="username" required>
+    <input id="pass" type="password" placeholder="Contraseña" autocomplete="current-password" required>
+    <div class="err" id="login-err"></div>
+    <button class="btn" type="submit">Entrar</button>
+  </form>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <div class="wrap">
+    <header>
+      <h1>🧠 Mi diario</h1>
+      <div style="display:flex;gap:8px">
+        <button class="icon-btn" id="btn-sum" title="Resumen para el neurólogo">📋</button>
+        <button class="icon-btn hidden" id="btn-out" title="Salir">🚪</button>
+      </div>
+    </header>
+
+    <div class="monthbar">
+      <button class="nav" id="prev" aria-label="Mes anterior">‹</button>
+      <div class="title" id="month-title"></div>
+      <button class="nav" id="next" aria-label="Mes siguiente">›</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="s-days">0</b><span>días con migraña</span></div>
+      <div class="stat"><b id="s-int">0</b><span>intensos</span></div>
+      <div class="stat"><b id="s-med">0</b><span>con medicación</span></div>
+    </div>
+
+    <div class="dow" id="dow"></div>
+    <div class="grid" id="grid"></div>
+
+    <div class="legend">
+      <span><i style="background:var(--leve)"></i>Leve</span>
+      <span><i style="background:var(--moderado)"></i>Moderado</span>
+      <span><i style="background:var(--intenso)"></i>Intenso</span>
+      <span><i style="background:color-mix(in srgb,var(--ok) 40%,var(--card))"></i>Sin migraña</span>
+    </div>
+    <p class="hint">Toca un día para anotarlo</p>
+  </div>
+</div>
+
+<!-- DAY SHEET -->
+<div class="overlay hidden" id="sheet-overlay">
+  <div class="sheet" id="sheet">
+    <h2 id="sh-title"></h2>
+    <p class="sub">¿Cómo fue este día?</p>
+
+    <div class="row">
+      <button class="opt no" id="o-no"><span class="e">😊</span>Sin migraña</button>
+      <button class="opt" id="o-yes"><span class="e">🤕</span>Con migraña</button>
+    </div>
+
+    <div id="details" class="hidden">
+      <div class="q">¿Qué intensidad?</div>
+      <div class="row" id="g-int">
+        <button class="opt i-leve" data-v="leve"><span class="e">🙂</span>Leve</button>
+        <button class="opt i-moderado" data-v="moderado"><span class="e">😣</span>Moderado</button>
+        <button class="opt i-intenso" data-v="intenso"><span class="e">😭</span>Intenso</button>
+      </div>
+
+      <div class="q">¿Cómo es el dolor?</div>
+      <div class="row" id="g-tipo">
+        <button class="opt" data-v="punzante"><span class="e">⚡</span>Punzante</button>
+        <button class="opt" data-v="opresivo"><span class="e">🗜️</span>Opresivo</button>
+      </div>
+
+      <div class="q">¿Dónde se localiza?</div>
+      <div class="row" id="g-loc">
+        <button class="opt" data-v="localizado"><span class="e" data-head="localizado"></span>Localizado</button>
+        <button class="opt" data-v="general"><span class="e" data-head="general"></span>General</button>
+      </div>
+
+      <div class="q">¿En qué zona? <small style="font-weight:400;color:var(--muted)">(puedes marcar varias)</small></div>
+      <div class="row wrap" id="g-zona"></div>
+
+      <div class="q">¿Qué síntomas tuviste?</div>
+      <div class="chips" id="g-sint"></div>
+
+      <div class="q">¿Posible desencadenante?</div>
+      <div class="chips" id="g-des"></div>
+
+      <div class="q">¿Tomaste medicación?</div>
+      <div class="row" id="g-med">
+        <button class="opt" data-v="si"><span class="e">💊</span>Sí</button>
+        <button class="opt" data-v="no"><span class="e">🚫</span>No</button>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" id="sh-cancel">Cancelar</button>
+      <button class="btn" id="sh-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="overlay hidden" id="sum-overlay">
+  <div class="sheet">
+    <h2>📋 Resumen para el neurólogo</h2>
+    <p class="sub" id="sum-range"></p>
+    <div class="row noprint" id="sum-period">
+      <button class="chip" data-m="1">1 mes</button>
+      <button class="chip on" data-m="3">3 meses</button>
+      <button class="chip" data-m="6">6 meses</button>
+      <button class="chip" data-m="12">1 año</button>
+    </div>
+    <div id="sum-body"></div>
+    <div class="actions noprint">
+      <button class="btn ghost" id="sum-close">Cerrar</button>
+      <button class="btn" id="sum-pdf">⬇ Descargar PDF</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* =====================================================================
+   CONFIGURACIÓN DE FIREBASE
+   Pega aquí los datos de tu proyecto (Configuración del proyecto > Tu app web).
+   Mientras estén vacíos, la app funciona en "modo local": guarda los datos
+   solo en este navegador y no pide login (útil para probarla).
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyAhr0MNuvmKl1X-2mvaJqBrId9bcTlO24Q",
+  authDomain: "diario-migranas.firebaseapp.com",
+  projectId: "diario-migranas",
+  appId: "1:823808772160:web:eb8c5073fab39cfba8b7a5"
+};
+/* ===================================================================== */
+
+const USE_FIREBASE = !!firebaseConfig.apiKey;
+
+const OPTIONS = {
+  zona:  ["Lado izquierdo","Lado derecho","Frente","Nuca","Ambos lados"],
+  sint:  ["🤢 Náuseas","🤮 Vómitos","💡 Sensibilidad a la luz","🔊 Sensibilidad al sonido"],
+  des:   ["😰 Estrés","😴 Poco sueño","🍫 Comida","🌸 Menstruación","⛅ Clima","📱 Pantallas","🍷 Alcohol","Otro"]
+};
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DIAS = ["L","M","X","J","V","S","D"];
+
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2,"0");
+const keyOf = (y,m,d) => `${y}-${pad(m+1)}-${pad(d)}`;
+const todayKey = () => { const t=new Date(); return keyOf(t.getFullYear(),t.getMonth(),t.getDate()); };
+
+let entries = {};              // { "2026-10-09": {...} }
+let view = new Date(); view.setDate(1);
+let store;
+
+/* ---------- ALMACENAMIENTO ---------- */
+async function initStore(){
+  if(!USE_FIREBASE){
+    const KEY="migranas-local";
+    store = {
+      subscribe(cb){ cb(JSON.parse(localStorage.getItem(KEY)||"{}")); },
+      async save(k,v){ const d=JSON.parse(localStorage.getItem(KEY)||"{}"); d[k]=v; localStorage.setItem(KEY,JSON.stringify(d)); this.subscribe(onData); },
+      async remove(k){ const d=JSON.parse(localStorage.getItem(KEY)||"{}"); delete d[k]; localStorage.setItem(KEY,JSON.stringify(d)); this.subscribe(onData); }
+    };
+    showApp(); store.subscribe(onData);
+    return;
+  }
+  const V="10.12.2";
+  const { initializeApp } = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`);
+  const A = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
+  const F = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
+  const app = initializeApp(firebaseConfig);
+  const auth = A.getAuth(app);
+  const db = F.getFirestore(app);
+  let unsub = null;
+
+  $("login-form").addEventListener("submit", async e=>{
+    e.preventDefault(); $("login-err").textContent="";
+    try{ await A.signInWithEmailAndPassword(auth,$("email").value.trim(),$("pass").value); }
+    catch(err){ $("login-err").textContent="Correo o contraseña incorrectos"; }
+  });
+  $("btn-out").classList.remove("hidden");
+  $("btn-out").onclick = ()=>A.signOut(auth);
+
+  A.onAuthStateChanged(auth, user=>{
+    if(unsub){unsub();unsub=null;}
+    if(!user){ entries={}; $("app").classList.add("hidden"); $("login").classList.remove("hidden"); return; }
+    $("login").classList.add("hidden");
+    const col = F.collection(db,"users",user.uid,"days");
+    store = {
+      save:(k,v)=>F.setDoc(F.doc(col,k),v),
+      remove:(k)=>F.deleteDoc(F.doc(col,k))
+    };
+    unsub = F.onSnapshot(col, snap=>{
+      const d={}; snap.forEach(x=>d[x.id]=x.data()); onData(d);
+    }, ()=>toast("No se pudo conectar. Revisa internet."));
+    showApp();
+  });
+}
+function showApp(){ $("app").classList.remove("hidden"); }
+function onData(d){ entries=d; render(); if(!$("sum-overlay").classList.contains("hidden")) renderSummary(); }
+
+/* ---------- CALENDARIO ---------- */
+function render(){
+  const y=view.getFullYear(), m=view.getMonth();
+  $("month-title").textContent = `${MESES[m]} ${y}`;
+  const first = (new Date(y,m,1).getDay()+6)%7;
+  const days = new Date(y,m+1,0).getDate();
+  const tk = todayKey();
+  let html="";
+  for(let i=0;i<first;i++) html+=`<div class="day empty"></div>`;
+  let n=0,intense=0,med=0;
+  for(let d=1; d<=days; d++){
+    const k=keyOf(y,m,d), e=entries[k];
+    let cls="day", mark="";
+    if(k>tk) cls+=" future";
+    if(k===tk) cls+=" today";
+    if(e){
+      if(e.migraña){ cls+=" "+(e.intensidad||"leve"); n++; if(e.intensidad==="intenso")intense++; if(e.medicacion)med++; mark=e.tipo==="punzante"?"⚡":e.tipo==="opresivo"?"🗜️":"🤕"; }
+      else { cls+=" ok"; mark="😊"; }
+    }
+    html+=`<button class="${cls}" data-k="${k}">${d}<span class="mark">${mark}</span></button>`;
+  }
+  $("grid").innerHTML=html;
+  $("s-days").textContent=n; $("s-int").textContent=intense; $("s-med").textContent=med;
+}
+$("dow").innerHTML = DIAS.map(d=>`<div>${d}</div>`).join("");
+$("prev").onclick=()=>{ view.setMonth(view.getMonth()-1); render(); };
+$("next").onclick=()=>{ view.setMonth(view.getMonth()+1); render(); };
+$("grid").addEventListener("click",e=>{
+  const b=e.target.closest(".day[data-k]"); if(b) openSheet(b.dataset.k);
+});
+
+/* ---------- HOJA DEL DÍA ---------- */
+let cur=null, form={};
+function chips(id,list){
+  $(id).innerHTML=list.map(t=>`<button class="chip" data-v="${t}">${t}</button>`).join("");
+}
+chips("g-sint",OPTIONS.sint); chips("g-des",OPTIONS.des);
+
+
+/* ---------- DIBUJOS DE CABEZA ---------- */
+function headSVG(key){
+  const HL="#ee4b4b", back=key==="nuca";
+  const R={
+    izquierda:'<rect x="32" y="0" width="40" height="70"/>',
+    derecha:'<rect x="0" y="0" width="32" height="70"/>',
+    frente:'<rect x="0" y="0" width="64" height="21"/>',
+    ambos:'<rect x="0" y="0" width="64" height="70"/>',
+    general:'<rect x="0" y="0" width="64" height="70"/>',
+    nuca:'<rect x="0" y="33" width="64" height="40"/>'
+  };
+  const shape='<ellipse cx="32" cy="29" rx="21" ry="25"/><ellipse cx="10.5" cy="31" rx="3" ry="6"/><ellipse cx="53.5" cy="31" rx="3" ry="6"/><rect x="26" y="50" width="12" height="12" rx="3"/>';
+  const id="hc"+key+Math.random().toString(36).slice(2,6);
+  let hl="";
+  if(key==="localizado") hl='<circle cx="45" cy="21" r="10" fill="'+HL+'" opacity=".35"/><circle cx="45" cy="21" r="5.5" fill="'+HL+'"/>';
+  else hl='<g clip-path="url(#'+id+')" fill="'+HL+'" opacity=".75">'+R[key]+'</g>';
+  const face=back
+    ? '<path d="M20 20 Q32 8 44 20 M22 30 Q32 20 42 30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".5"/>'
+    : '<circle cx="25" cy="28" r="1.9" fill="currentColor"/><circle cx="39" cy="28" r="1.9" fill="currentColor"/><path d="M26 39 Q32 44 38 39" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>';
+  return '<svg viewBox="0 0 64 64" aria-hidden="true"><defs><clipPath id="'+id+'">'+shape+'</clipPath></defs>'
+    +'<g fill="var(--card)" stroke="currentColor" stroke-width="2">'+shape+'</g>'+hl+face+'</svg>';
+}
+document.querySelectorAll("[data-head]").forEach(el=>el.innerHTML=headSVG(el.dataset.head));
+const ZONAS=[["Lado izquierdo","izquierda"],["Lado derecho","derecha"],["Frente","frente"],["Nuca","nuca"],["Ambos lados","ambos"]];
+$("g-zona").innerHTML=ZONAS.map(([v,k])=>'<button class="opt" data-v="'+v+'"><span class="e">'+headSVG(k)+'</span>'+v+'</button>').join("");
+
+function setSingle(groupId,val){
+  document.querySelectorAll(`#${groupId} .opt`).forEach(b=>b.classList.toggle("on",b.dataset.v===val));
+}
+function setMulti(groupId,vals){
+  document.querySelectorAll(`#${groupId} .chip`).forEach(b=>b.classList.toggle("on",(vals||[]).includes(b.dataset.v)));
+}
+function setMultiOpt(groupId,vals){
+  document.querySelectorAll(`#${groupId} .opt`).forEach(b=>b.classList.toggle("on",(vals||[]).includes(b.dataset.v)));
+}
+function setMain(val){ // true | false | null
+  form.migraña=val;
+  $("o-yes").classList.toggle("on",val===true);
+  $("o-no").classList.toggle("on",val===false);
+  $("details").classList.toggle("hidden",val!==true);
+}
+function openSheet(k){
+  cur=k; const e=entries[k]||{};
+  const [y,m,d]=k.split("-").map(Number);
+  const dt=new Date(y,m-1,d);
+  $("sh-title").textContent=dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
+  form={ migraña:e.migraña===undefined?null:e.migraña, intensidad:e.intensidad||null, tipo:e.tipo||null, localizacion:e.localizacion||null, medicacion:e.medicacion===undefined?null:e.medicacion };
+  setMain(form.migraña);
+  setSingle("g-int",form.intensidad); setSingle("g-tipo",form.tipo); setSingle("g-loc",form.localizacion);
+  setSingle("g-med", form.medicacion===null?null:(form.medicacion?"si":"no"));
+  setMultiOpt("g-zona",e.zonas); setMulti("g-sint",e.sintomas); setMulti("g-des",e.desencadenantes);
+  $("sheet-overlay").classList.remove("hidden");
+  $("sheet").scrollTop=0;
+}
+function closeSheet(){ $("sheet-overlay").classList.add("hidden"); }
+$("o-yes").onclick=()=>setMain(true);
+$("o-no").onclick=()=>setMain(false);
+[["g-int","intensidad"],["g-tipo","tipo"],["g-loc","localizacion"]].forEach(([g,f])=>{
+  $(g).addEventListener("click",e=>{ const b=e.target.closest(".opt"); if(!b)return; form[f]=b.dataset.v; setSingle(g,form[f]); });
+});
+$("g-med").addEventListener("click",e=>{ const b=e.target.closest(".opt"); if(!b)return; form.medicacion=b.dataset.v==="si"; setSingle("g-med",b.dataset.v); });
+["g-sint","g-des"].forEach(g=>$(g).addEventListener("click",e=>{ const b=e.target.closest(".chip"); if(b) b.classList.toggle("on"); }));
+$("g-zona").addEventListener("click",e=>{ const b=e.target.closest(".opt"); if(b) b.classList.toggle("on"); });
+const picked=g=>[...document.querySelectorAll(`#${g} .chip.on`)].map(b=>b.dataset.v);
+
+$("sh-cancel").onclick=closeSheet;
+$("sheet-overlay").addEventListener("click",e=>{ if(e.target.id==="sheet-overlay") closeSheet(); });
+$("sh-save").onclick=async ()=>{
+  if(form.migraña===null){ toast("Elige: con o sin migraña"); return; }
+  try{
+    if(form.migraña===true){
+      if(!form.intensidad){ toast("Elige la intensidad"); return; }
+      await store.save(cur,{
+        migraña:true, intensidad:form.intensidad, tipo:form.tipo||null, localizacion:form.localizacion||null,
+        zonas:[...document.querySelectorAll("#g-zona .opt.on")].map(b=>b.dataset.v), sintomas:picked("g-sint"), desencadenantes:picked("g-des"),
+        medicacion:form.medicacion===true
+      });
+    } else {
+      await store.save(cur,{migraña:false});
+    }
+    closeSheet(); toast("Guardado ✓");
+  }catch(err){ toast("No se pudo guardar. Revisa internet."); }
+};
+
+/* ---------- RESUMEN ---------- */
+let sumMonths=3;
+$("btn-sum").onclick=()=>{ $("sum-overlay").classList.remove("hidden"); renderSummary(); loadPDF().catch(()=>{}); };
+$("sum-close").onclick=()=>$("sum-overlay").classList.add("hidden");
+$("sum-period").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b)return; sumMonths=+b.dataset.m;
+  document.querySelectorAll("#sum-period .chip").forEach(c=>c.classList.toggle("on",c===b)); renderSummary();
+});
+function count(arr){ const c={}; arr.forEach(x=>{ if(x) c[x]=(c[x]||0)+1; }); return Object.entries(c).sort((a,b)=>b[1]-a[1]); }
+function bars(title,pairs){
+  if(!pairs.length) return "";
+  const max=Math.max(...pairs.map(p=>p[1]));
+  return `<div class="sum-card"><h3>${title}</h3>${pairs.map(([l,n])=>`<div class="bar"><div class="lbl">${l}</div><div class="track"><div class="fill" style="width:${n/max*100}%"></div></div><div class="n">${n}</div></div>`).join("")}</div>`;
+}
+function renderSummary(){
+  const end=new Date(); const start=new Date(); start.setMonth(start.getMonth()-sumMonths); start.setDate(start.getDate()+1);
+  const sk=keyOf(start.getFullYear(),start.getMonth(),start.getDate()), ek=todayKey();
+  const fmt=d=>d.toLocaleDateString("es-ES",{day:"numeric",month:"short",year:"numeric"});
+  $("sum-range").textContent=`Del ${fmt(start)} al ${fmt(end)}`;
+  const list=Object.entries(entries).filter(([k,e])=>k>=sk&&k<=ek&&e.migraña).sort((a,b)=>a[0]<b[0]?-1:1);
+  const recorded=Object.entries(entries).filter(([k])=>k>=sk&&k<=ek).length;
+  if(!list.length){ $("sum-body").innerHTML=`<div class="sum-card">No hay migrañas anotadas en este periodo 🎉<br><small style="color:var(--muted)">Días registrados: ${recorded}</small></div>`; return; }
+  const E=list.map(x=>x[1]);
+  const med=E.filter(e=>e.medicacion).length;
+  const int={leve:0,moderado:0,intenso:0}; E.forEach(e=>int[e.intensidad]++);
+  const avgPerMonth=(list.length/sumMonths).toFixed(1);
+  let html=`<div class="sum-card"><h3>Resumen</h3>
+    <div class="bar"><div class="lbl">Días con migraña</div><div class="n" style="width:auto">${list.length}</div></div>
+    <div class="bar"><div class="lbl">Media al mes</div><div class="n" style="width:auto">${avgPerMonth}</div></div>
+    <div class="bar"><div class="lbl">Con medicación</div><div class="n" style="width:auto">${med}</div></div>
+    <div class="bar"><div class="lbl">Días registrados</div><div class="n" style="width:auto">${recorded}</div></div></div>`;
+  html+=bars("Intensidad",[["🙂 Leve",int.leve],["😣 Moderado",int.moderado],["😭 Intenso",int.intenso]].filter(p=>p[1]));
+  html+=bars("Tipo de dolor",count(E.map(e=>e.tipo)).map(([k,n])=>[k[0].toUpperCase()+k.slice(1),n]));
+  html+=bars("Localización",count(E.map(e=>e.localizacion)).map(([k,n])=>[k[0].toUpperCase()+k.slice(1),n]));
+  html+=bars("Zona",count(E.flatMap(e=>e.zonas||[])));
+  html+=bars("Síntomas",count(E.flatMap(e=>e.sintomas||[])));
+  html+=bars("Desencadenantes",count(E.flatMap(e=>e.desencadenantes||[])));
+  const colors={leve:"var(--leve)",moderado:"var(--moderado)",intenso:"var(--intenso)"};
+  html+=`<div class="sum-card"><h3>Detalle por día</h3>${list.slice().reverse().map(([k,e])=>{
+    const [y,m,d]=k.split("-").map(Number);
+    const ds=new Date(y,m-1,d).toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"});
+    const extra=[e.tipo,e.localizacion,...(e.zonas||[]),e.medicacion?"💊":""].filter(Boolean).join(" · ");
+    return `<div class="list-day"><span><span class="dot" style="background:${colors[e.intensidad]}"></span>${ds} — ${e.intensidad}</span><span style="color:var(--muted);text-align:right">${extra}</span></div>`;
+  }).join("")}</div>`;
+  $("sum-body").innerHTML=html;
+}
+
+/* ---------- INFORME PDF ---------- */
+let pdfLoading=null;
+function loadPDF(){
+  if(window.jspdf) return Promise.resolve();
+  if(!pdfLoading){
+    pdfLoading=new Promise((res,rej)=>{
+      const s=document.createElement("script");
+      s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      s.onload=res; s.onerror=()=>{pdfLoading=null;rej(new Error("jspdf"));};
+      document.head.appendChild(s);
+    });
+  }
+  return pdfLoading;
+}
+const C={acc:[109,93,252],soft:[233,230,255],text:[37,34,61],muted:[123,120,148],line:[230,228,245],base:[246,245,252],
+  leve:[255,216,77],moderado:[255,154,60],intenso:[238,75,75],ok:[43,182,115],okSoft:[210,240,225],white:[255,255,255]};
+const clean=t=>String(t||"").replace(/[^ -ÿ]/g,"").trim();
+const cap=t=>t?t[0].toUpperCase()+t.slice(1):"";
+const mix=(a,b,f)=>a.map((v,i)=>Math.round(v+(b[i]-v)*f));
+
+async function makePDF(){
+  await loadPDF();
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:"mm",format:"a4"});
+  const W=210,H=297,M=14,CW=W-2*M;
+  let y=0;
+
+  /* ---- datos ---- */
+  const end=new Date(); const start=new Date();
+  start.setMonth(start.getMonth()-sumMonths); start.setDate(start.getDate()+1);
+  const sk=keyOf(start.getFullYear(),start.getMonth(),start.getDate()), ek=todayKey();
+  const inRange=Object.entries(entries).filter(([k])=>k>=sk&&k<=ek);
+  const list=inRange.filter(([,e])=>e.migraña).sort((a,b)=>a[0]<b[0]?-1:1);
+  const E=list.map(x=>x[1]);
+  const int={leve:0,moderado:0,intenso:0}; E.forEach(e=>{ if(int[e.intensidad]!==undefined) int[e.intensidad]++; });
+  const med=E.filter(e=>e.medicacion).length;
+  const fmt=d=>d.toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});
+  const months=[]; { const mm=new Date(start.getFullYear(),start.getMonth(),1); const last=new Date(end.getFullYear(),end.getMonth(),1);
+    while(mm<=last){ months.push([mm.getFullYear(),mm.getMonth()]); mm.setMonth(mm.getMonth()+1); } }
+
+  /* ---- helpers de dibujo ---- */
+  const T=(s,x,yy,o={})=>{ doc.setFont("helvetica",o.bold?"bold":"normal"); doc.setFontSize(o.size||9); doc.setTextColor(...(o.color||C.text)); doc.text(String(s),x,yy,{align:o.align||"left"}); };
+  const R=(x,yy,w,h,col,r)=>{ doc.setFillColor(...col); if(r) doc.roundedRect(x,yy,w,h,r,r,"F"); else doc.rect(x,yy,w,h,"F"); };
+  const newPage=()=>{ doc.addPage(); y=M+2; };
+  const need=h=>{ if(y+h>H-16) newPage(); };
+  const section=(title,extra=0)=>{ need(16+extra); y+=5; R(M,y-4.4,1.8,6.4,C.acc,0.9); T(title,M+4,y,{size:13,bold:true}); y+=6; };
+  const poly=(pts,col)=>{ doc.setFillColor(...col); const rel=[]; for(let i=1;i<pts.length;i++) rel.push([pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]]); doc.lines(rel,pts[0][0],pts[0][1],[1,1],"F",true); };
+  const legend=items=>{ need(8); let x=M; items.forEach(([col,l])=>{ R(x,y-3,4,4,col,1); T(l,x+6,y,{size:8,color:C.muted}); x+=doc.getTextWidth(l)+13; }); y+=6; };
+  const txtOn=k=>k==="intenso"?C.white:[74,50,0];
+
+  /* ---- cabecera ---- */
+  R(0,0,W,36,C.acc);
+  T("Informe de migrañas",M,16,{size:23,bold:true,color:C.white});
+  T(`Periodo: ${fmt(start)} - ${fmt(end)}`,M,25,{size:10,color:[225,221,255]});
+  T(`Generado el ${fmt(end)}`,M,31,{size:8,color:[200,195,255]});
+  y=44;
+
+  /* ---- indicadores ---- */
+  const kp=[[list.length,"días con migraña"],[(list.length/sumMonths).toFixed(1),"media al mes"],[int.intenso,"días intensos"],[med,"con medicación"]];
+  const tw=(CW-9)/4;
+  kp.forEach(([v,l],i)=>{ const x=M+i*(tw+3); R(x,y,tw,23,C.soft,3); T(v,x+tw/2,y+12,{size:21,bold:true,color:C.acc,align:"center"}); T(l,x+tw/2,y+19,{size:8,color:C.muted,align:"center"}); });
+  y+=29;
+  T(`Días registrados: ${inRange.length}   ·   Días sin migraña anotados: ${inRange.length-list.length}`,M,y,{size:9,color:C.muted});
+  y+=3;
+
+  /* ---- calendarios ---- */
+  section("Calendario");
+  const colW=CW/3, cw=8, ch=7, blockH=56;
+  const dowL=["L","M","X","J","V","S","D"];
+  for(let i=0;i<months.length;i++){
+    const col=i%3;
+    if(col===0){ need(blockH); }
+    if(col===0) var rowY=y;
+    const [yy,mo]=months[i]; const x=M+col*colW;
+    T(cap(MESES[mo])+" "+yy,x,rowY+4,{size:10,bold:true});
+    dowL.forEach((d,c)=>T(d,x+c*cw+cw/2,rowY+9,{size:6.5,color:C.muted,align:"center"}));
+    const first=(new Date(yy,mo,1).getDay()+6)%7, nd=new Date(yy,mo+1,0).getDate();
+    for(let d=1;d<=nd;d++){
+      const idx=first+d-1, r=Math.floor(idx/7), c=idx%7, cx=x+c*cw, cy=rowY+11+r*ch;
+      const k=keyOf(yy,mo,d), e=entries[k], inR=k>=sk&&k<=ek;
+      let tc=[190,188,210];
+      if(inR&&e){
+        if(e.migraña){ const key=e.intensidad||"leve"; R(cx+.5,cy,cw-1,ch-1,C[key],1.5); tc=txtOn(key); }
+        else { R(cx+.5,cy,cw-1,ch-1,C.okSoft,1.5); tc=[30,120,80]; }
+      } else if(inR) tc=C.muted;
+      T(d,cx+cw/2,cy+4.2,{size:7,bold:!!(inR&&e&&e.migraña),color:tc,align:"center"});
+    }
+    if(col===2||i===months.length-1){ y=rowY+blockH; }
+  }
+  legend([[C.leve,"Leve"],[C.moderado,"Moderado"],[C.intenso,"Intenso"],[C.okSoft,"Sin migraña"]]);
+
+  if(!list.length){
+    y+=4; T("No hay migrañas anotadas en este periodo.",M,y,{size:11,color:C.muted});
+  } else {
+    /* ---- intensidad ---- */
+    section("Intensidad",24);
+    let x=M; const tot=list.length;
+    [["leve","Leve"],["moderado","Moderado"],["intenso","Intenso"]].forEach(([k])=>{
+      const w=CW*int[k]/tot;
+      if(w>0){ R(x,y,w,10,C[k]); if(w>10) T(int[k],x+w/2,y+6.8,{size:10,bold:true,color:txtOn(k),align:"center"}); x+=w; }
+    });
+    y+=17;
+    legend([["leve","Leve"],["moderado","Moderado"],["intenso","Intenso"]].map(([k,l])=>[C[k],`${l}: ${int[k]} (${Math.round(int[k]/tot*100)}%)`]));
+
+    /* ---- evolución mensual ---- */
+    const ph=38;
+    section("Evolución mes a mes",ph+16);
+    const md=months.map(([yy,mo])=>{ const p=`${yy}-${pad(mo+1)}`; const c={leve:0,moderado:0,intenso:0};
+      list.forEach(([k,e])=>{ if(k.startsWith(p)&&c[e.intensidad]!==undefined) c[e.intensidad]++; });
+      return {mo,c,t:c.leve+c.moderado+c.intenso}; });
+    const mx=Math.max(1,...md.map(m=>m.t));
+    const base=y+ph+4;
+    doc.setDrawColor(...C.line); doc.setLineWidth(.3); doc.line(M,base,W-M,base); doc.line(M,base-ph,W-M,base-ph);
+    T(mx,M,base-ph-1.2,{size:7,color:C.muted});
+    const slot=CW/md.length, bw=Math.min(16,slot*.6);
+    md.forEach((m,i)=>{
+      const cx=M+slot*(i+.5); let by=base;
+      ["leve","moderado","intenso"].forEach(k=>{ const h=ph*m.c[k]/mx; if(h>0){ R(cx-bw/2,by-h,bw,h,C[k]); by-=h; } });
+      T(m.t,cx,by-1.5,{size:8,bold:true,align:"center"});
+      T(MESES[m.mo].slice(0,3),cx,base+4.5,{size:7.5,color:C.muted,align:"center"});
+    });
+    y=base+9;
+    T("Días con migraña por mes",M,y,{size:8,color:C.muted}); y+=2;
+
+    /* ---- zonas en la cabeza ---- */
+    section("Dónde duele",66);
+    const zc={izq:0,der:0,amb:0,fre:0,nuc:0};
+    E.forEach(e=>(e.zonas||[]).forEach(z=>{ if(z==="Lado izquierdo")zc.izq++; else if(z==="Lado derecho")zc.der++; else if(z==="Ambos lados")zc.amb++; else if(z==="Frente")zc.fre++; else if(z==="Nuca")zc.nuc++; }));
+    const vL=zc.izq+zc.amb, vR=zc.der+zc.amb;
+    const zmax=Math.max(1,vL,vR,zc.fre,zc.nuc);
+    const shade=v=>mix([240,238,252],C.intenso,v/zmax);
+    const rx=17, ry=21;
+    const drawHead=(cx,cy,back)=>{
+      const arc=(a0,a1)=>{ const p=[]; for(let i=0;i<=26;i++){ const a=(a0+(a1-a0)*i/26)*Math.PI/180; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; };
+      R(cx-5,cy+ry-4,10,12,C.line,2);
+      doc.setFillColor(...C.base); doc.setDrawColor(...C.text); doc.setLineWidth(.5);
+      if(!back){ doc.ellipse(cx-rx,cy+2,2.3,4.6,"FD"); doc.ellipse(cx+rx,cy+2,2.3,4.6,"FD"); }
+      doc.ellipse(cx,cy,rx,ry,"F");
+      const lab=(v,px,py)=>T(v,px,py+1.5,{size:11,bold:true,color:(v/zmax>.55)?C.white:C.text,align:"center"});
+      if(!back){
+        const a=Math.asin(.45)*180/Math.PI, yb=cy-.45*ry;
+        poly([...arc(-a,90),[cx,yb]],shade(vL));
+        poly([...arc(90,180+a),[cx,yb]],shade(vR));
+        poly(arc(180+a,360-a),shade(zc.fre));
+        lab(vL,cx+rx*.5,cy+ry*.4); lab(vR,cx-rx*.5,cy+ry*.4); lab(zc.fre,cx,cy-ry*.68);
+        doc.setFillColor(...C.text); doc.circle(cx-6,cy-1,1,"F"); doc.circle(cx+6,cy-1,1,"F");
+        doc.setDrawColor(...C.text); doc.setLineWidth(.4); doc.line(cx-3,cy+2,cx+3,cy+2);
+      } else {
+        const a=Math.asin(.15)*180/Math.PI;
+        poly(arc(a,180-a),shade(zc.nuc));
+        lab(zc.nuc,cx,cy+ry*.55);
+      }
+      doc.setDrawColor(...C.text); doc.setLineWidth(.6); doc.ellipse(cx,cy,rx,ry,"S");
+      T(back?"Vista trasera":"Vista frontal",cx,cy+ry+13,{size:8,color:C.muted,align:"center"});
+    };
+    const hy=y+ry+3;
+    drawHead(M+30,hy,false); drawHead(M+82,hy,true);
+    const tx=M+118;
+    T("Veces que se anotó cada zona",tx,hy-ry+4,{size:9,bold:true});
+    [["Lado izquierdo",zc.izq],["Lado derecho",zc.der],["Ambos lados",zc.amb],["Frente",zc.fre],["Nuca",zc.nuc]].forEach(([l,n],i)=>{
+      T(l,tx,hy-ry+13+i*7,{size:9}); T(n,tx+46,hy-ry+13+i*7,{size:9,bold:true,align:"right"}); });
+    T("Cuanto más rojo, más veces.",tx,hy-ry+13+5*7+2,{size:7.5,color:C.muted});
+    T("El lado izquierdo/derecho es el de la persona.",tx,hy-ry+13+5*7+6,{size:7.5,color:C.muted});
+    for(let i=0;i<5;i++) R(tx+i*8,hy-ry+13+5*7+9,8,3,mix([240,238,252],C.intenso,i/4));
+    y=hy+ry+16;
+
+    /* ---- barras ---- */
+    const hbars=(title,pairs,col)=>{
+      if(!pairs.length) return;
+      section(title,18);
+      const m=Math.max(...pairs.map(p=>p[1]));
+      pairs.forEach(([l,n])=>{
+        need(8);
+        T(cap(clean(l)),M,y+4,{size:9});
+        const bx=M+58, bw=96;
+        R(bx,y,bw,5,C.line,2.5); R(bx,y,Math.max(3,bw*n/m),5,col,2.5);
+        T(`${n}  (${Math.round(n/list.length*100)}%)`,bx+bw+4,y+4,{size:9,bold:true});
+        y+=8;
+      });
+    };
+    hbars("Tipo de dolor",count(E.map(e=>e.tipo)),C.acc);
+    hbars("Localización",count(E.map(e=>e.localizacion)),[88,170,230]);
+    hbars("Síntomas",count(E.flatMap(e=>(e.sintomas||[]).map(clean))),[236,120,170]);
+    hbars("Desencadenantes",count(E.flatMap(e=>(e.desencadenantes||[]).map(clean))),[60,190,170]);
+
+    /* ---- detalle ---- */
+    section("Detalle por día",24);
+    const cols=[["Fecha",26],["Intensidad",22],["Dolor",30],["Zona",32],["Síntomas",34],["Desencadenante",30],["Med.",8]];
+    const head=()=>{ need(10); R(M,y,CW,7,C.acc,1.5); let x=M; cols.forEach(([n,w])=>{ T(n,x+1.5,y+4.8,{size:7.5,bold:true,color:C.white}); x+=w; }); y+=7; };
+    head();
+    list.slice().reverse().forEach(([k,e],ri)=>{
+      const [yy,mo,dd]=k.split("-").map(Number);
+      const f=new Date(yy,mo-1,dd).toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"});
+      const cells=[cap(f.replace(",","")),null,[cap(e.tipo||""),cap(e.localizacion||"")].filter(Boolean).join(" - ")||"-",(e.zonas||[]).join(", ")||"-",(e.sintomas||[]).map(clean).join(", ")||"-",(e.desencadenantes||[]).map(clean).join(", ")||"-",e.medicacion?"Sí":"No"];
+      doc.setFont("helvetica","normal"); doc.setFontSize(7.5);
+      const lines=cells.map((c,i)=>c===null?[""]:doc.splitTextToSize(String(c),cols[i][1]-2.5));
+      const rh=Math.max(...lines.map(l=>l.length))*3.5+3.4;
+      if(y+rh>H-16){ newPage(); head(); }
+      if(ri%2===0) R(M,y,CW,rh,[248,247,254]);
+      let x=M;
+      cells.forEach((c,i)=>{
+        if(i===1){ doc.setFillColor(...C[e.intensidad]||C.leve); doc.circle(x+3,y+3.4,1.4,"F"); T(cap(e.intensidad||""),x+5.6,y+4.1,{size:7.5}); }
+        else lines[i].forEach((ln,li)=>T(ln,x+1.5,y+4.1+li*3.5,{size:7.5,bold:i===0}));
+        x+=cols[i][1];
+      });
+      y+=rh;
+    });
+  }
+
+  /* ---- pie ---- */
+  const n=doc.getNumberOfPages();
+  for(let p=1;p<=n;p++){ doc.setPage(p); T(`Mi diario de migrañas   ·   Página ${p} de ${n}`,W/2,H-8,{size:7.5,color:C.muted,align:"center"}); }
+  return doc;
+}
+
+$("sum-pdf").onclick=async()=>{
+  const btn=$("sum-pdf"), old=btn.textContent;
+  btn.textContent="Creando PDF…"; btn.disabled=true;
+  try{
+    const doc=await makePDF();
+    const name="informe-migranas-"+todayKey()+".pdf";
+    const file=new File([doc.output("blob")],name,{type:"application/pdf"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file],title:"Informe de migrañas"}); }
+      catch(e){ if(e.name!=="AbortError") doc.save(name); }
+    } else doc.save(name);
+  }catch(e){ console.error(e); toast("No se pudo crear el PDF. ¿Hay internet?"); }
+  btn.textContent=old; btn.disabled=false;
+};
+
+/* ---------- UTILIDADES ---------- */
+function toast(msg){
+  const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2000);
+}
+
+render();
+initStore().catch(err=>{
+  console.error(err);
+  $("login").classList.remove("hidden");
+  $("login-err").textContent="No se pudo cargar. Revisa tu conexión.";
+});
+</script>
+</body>
